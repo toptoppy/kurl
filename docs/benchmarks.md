@@ -24,6 +24,8 @@ time ./build/native/nativeCompile/kurl
 docker image inspect ghcr.io/toptoppy/kurl:latest --format '{{.Size}}'
 docker stats --no-stream kurl
 wrk --latency -t4 -c100 -d15s http://localhost:8080/<test-slug>
+wrk --latency -t4 -c1000 -d15s http://localhost:8080/<test-slug>
 ```
 
 Do not compare results from different platforms as if they were equivalent. Record the exact command, build mode, and environment with every result.
+The CI benchmark also sends `SIGTERM` and requires the native process to exit with status `0`.

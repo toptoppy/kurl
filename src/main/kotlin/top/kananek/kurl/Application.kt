@@ -14,8 +14,11 @@ import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.security.SecureRandom
+import java.sql.SQLException
 
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "healthcheck") {
@@ -56,7 +59,7 @@ fun Application.kurlModule(
 
     routing {
         get("/health") {
-            val healthy = runCatching { repository.checkHealth() }.getOrDefault(false)
+            val healthy = runCatching { withContext(Dispatchers.IO) { repository.checkHealth() } }.getOrDefault(false)
             call.respond(
                 if (healthy) HttpStatusCode.OK else HttpStatusCode.ServiceUnavailable,
                 HealthResponse(if (healthy) "UP" else "DOWN", if (healthy) "OK" else "ERROR"),
@@ -74,7 +77,7 @@ fun Application.kurlModule(
                 return@post
             }
             val url = request.url.trim()
-            val validationError = validator.validate(url)
+            val validationError = withContext(Dispatchers.IO) { validator.validate(url) }
             if (validationError != null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse(validationError))
                 return@post
@@ -90,15 +93,25 @@ fun Application.kurlModule(
             }
 
             val record = if (customSlug != null) {
-                runCatching { repository.save(customSlug, url) }.getOrElse {
+                try {
+                    withContext(Dispatchers.IO) { repository.save(customSlug, url) }
+                } catch (error: SQLException) {
+                    if (!error.isUniqueConstraintViolation()) throw error
                     call.respond(HttpStatusCode.Conflict, ErrorResponse("Slug is already taken"))
                     return@post
                 }
             } else {
                 var saved: UrlRecord? = null
-                repeat(5) {
-                    if (saved == null) {
-                        saved = runCatching { repository.save(generateSlug(), url) }.getOrNull()
+                withContext(Dispatchers.IO) {
+                    repeat(5) {
+                        if (saved == null) {
+                            saved = try {
+                                repository.save(generateSlug(), url)
+                            } catch (error: SQLException) {
+                                if (!error.isUniqueConstraintViolation()) throw error
+                                null
+                            }
+                        }
                     }
                 }
                 saved ?: run {
@@ -113,12 +126,14 @@ fun Application.kurlModule(
         }
 
         get("/api/{slug}/stats") {
+            if (apiKey != null && call.request.headers["X-Api-Key"] != apiKey) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
+                return@get
+            }
             val slug = call.parameters["slug"].orEmpty()
-            val record = repository.findBySlug(slug)
+            val record = withContext(Dispatchers.IO) { repository.findBySlug(slug) }
             if (record == null) {
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Slug not found"))
-            } else if (apiKey != null && call.request.headers["X-Api-Key"] != apiKey) {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             } else {
                 call.respond(
                     StatsResponse(record.slug, record.originalUrl, record.clickCount, record.createdAt),
@@ -132,11 +147,11 @@ fun Application.kurlModule(
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Slug not found"))
                 return@get
             }
-            val record = repository.findBySlug(slug)
+            val record = withContext(Dispatchers.IO) { repository.findBySlug(slug) }
             if (record == null) {
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Slug not found"))
             } else {
-                repository.incrementClicks(slug)
+                withContext(Dispatchers.IO) { repository.incrementClicks(slug) }
                 call.response.headers.append(HttpHeaders.Location, record.originalUrl)
                 call.respond(HttpStatusCode.Found)
             }
@@ -152,3 +167,5 @@ private const val BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP
 private fun generateSlug(): String = buildString(6) {
     repeat(6) { append(BASE62[slugRandom.nextInt(BASE62.length)]) }
 }
+
+private fun SQLException.isUniqueConstraintViolation(): Boolean = errorCode and 0xff == 19

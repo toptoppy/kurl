@@ -14,6 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import java.net.InetAddress
+import java.nio.file.Files
 
 class ApplicationTest {
     private fun testRepo() =
@@ -30,6 +31,17 @@ class ApplicationTest {
         assertEquals(HttpStatusCode.OK, response.status)
         assertTrue(response.bodyAsText().contains("\"status\":\"UP\""))
         repository.close()
+    }
+
+    @Test
+    fun `health endpoint reports unavailable when the database path fails`() = testApplication {
+        val directory = Files.createTempDirectory("kurl-health-test").resolve("data")
+        val repository = UrlRepository(directory.resolve("db.sqlite").toString())
+        Files.list(directory).use { paths -> paths.forEach(Files::delete) }
+        Files.delete(directory)
+        Files.writeString(directory, "not a directory")
+        application { kurlModule(repository) }
+        assertEquals(HttpStatusCode.ServiceUnavailable, client.get("/health").status)
     }
 
     @Test

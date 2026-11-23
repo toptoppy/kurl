@@ -1,7 +1,10 @@
+FROM scratch AS native-binary
+COPY build/native/nativeCompile/kurl /kurl
+
 FROM gcr.io/distroless/cc-debian12:nonroot
 WORKDIR /app
 COPY --chown=65532:65532 docker/data /app/data
-COPY --chown=65532:65532 build/native/nativeCompile/kurl /app/kurl
+COPY --from=native-binary --chown=65532:65532 /kurl /app/kurl
 EXPOSE 8080
 ENV PORT=8080
 ENV DATABASE_PATH=/app/data/kurl.db

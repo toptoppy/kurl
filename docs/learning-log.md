@@ -24,6 +24,6 @@ Use this entry for each completed milestone:
 - **Engineering Hurdle / Gotcha:** Ktor's test client followed the redirect to the real external URL rather than leaving the 302 available for assertion.
 - **Resolution & Code Snippet:** Configure the test client not to follow redirects; then assert the status and `Location` header directly.
 - **TopLog Takeaway:** Redirect integration tests should inspect the redirect response itself, not accidentally turn into an external network test.
-- **Verification:** `./gradlew clean check test` passed with 15 tests, including a 50-coroutine write/click test and an assertion that the database uses WAL. A local `GET /health` returned HTTP 200 and `{"status":"UP","database":"OK"}`.
+- **Verification:** `./gradlew clean check test` passed with 16 tests, including a 50-coroutine write/click test, an assertion that the database uses WAL, and an unhealthy-database health response. A local `GET /health` returned HTTP 200 and `{"status":"UP","database":"OK"}`.
 - **Native-image note:** The native Gradle task is configured, but this workstation has a JetBrains JDK rather than GraalVM, so local native compilation is not yet verified. CI now uses GraalVM and runs `nativeCompile`.
 - **CI finding:** GraalVM 21 rejected the `SharedArenaSupport` option in Ktor's Netty native-image metadata. Keep the app and Gradle on Java 21, but use GraalVM 25 for the native-image executable; CI must confirm this mixed toolchain before the native milestone is considered complete.
