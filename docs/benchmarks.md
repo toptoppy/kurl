@@ -15,7 +15,7 @@ Measurements below are from one GitHub-hosted Linux x86_64 CI run. They are repr
 | Redirect, 1,000 connections: P50 / P95 / P99 | Record measured values | 1,332.312 / 1,681.686 / 1,762.661 ms |
 | Redirect, 1,000 connections: throughput | Record measured value | 785.455 requests/second |
 
-The benchmark ran on 2026-11-23 with GraalVM Native Image 25.0.4, an AMD EPYC 9V74 80-Core Processor, and Linux kernel `7.0.0-1020-azure` on x86_64. OHA reported a 100% success rate at both concurrency levels. The first distroless smoke test found the image was missing `libz.so.1`; the Dockerfile now includes Debian 12's zlib runtime library. The final container check is pending another CI run.
+The benchmark ran on 2026-11-23 with GraalVM Native Image 25.0.4, an AMD EPYC 9V74 80-Core Processor, and Linux kernel `7.0.0-1020-azure` on x86_64. OHA reported a 100% success rate at both concurrency levels. Container validation found two missing runtime requirements: Debian 12's `libz.so.1` and the HTTP URL handler used by the standalone healthcheck. Both fixes are in the repository; the final container check is pending another CI run. The image-size number above predates the zlib addition and must be refreshed from the passing run.
 
 ## Reproduction
 
