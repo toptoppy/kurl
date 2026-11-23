@@ -17,11 +17,13 @@ Record CPU model, OS/kernel, GraalVM version, Gradle version, and Docker version
 
 ```sh
 ./gradlew nativeCompile
+sudo apt-get install -y wrk
+bash scripts/benchmark.sh
 ls -lh build/native/nativeCompile/kurl
 time ./build/native/nativeCompile/kurl
 docker image inspect ghcr.io/toptoppy/kurl:latest --format '{{.Size}}'
 docker stats --no-stream kurl
-wrk -t4 -c100 -d30s http://localhost:8080/<test-slug>
+wrk --latency -t4 -c100 -d15s http://localhost:8080/<test-slug>
 ```
 
 Do not compare results from different platforms as if they were equivalent. Record the exact command, build mode, and environment with every result.

@@ -24,3 +24,17 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew check test nativeCompile
+      - run: sudo apt-get update && sudo apt-get install -y wrk
+      - run: bash scripts/benchmark.sh
+      - name: Build container and check image size
+        run: |
+          docker build --tag kurl:ci .
+          size=$(docker image inspect kurl:ci --format '{{.Size}}')
+          echo "Container image size: ${size} bytes"
+          test "$size" -lt 60000000
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-benchmark
+          path: |
+            build/benchmark-results.md
+            build/benchmark-server.log
