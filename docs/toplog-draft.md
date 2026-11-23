@@ -22,7 +22,7 @@ Ktor's Netty native-image metadata uses `SharedArenaSupport`, which the GraalVM 
 
 The next failure appeared only after the native executable started: Ktor's automatic content-negotiation lookup could not find the JSON model serializers. KURL now calls the generated kotlinx-serialization codecs directly at the HTTP boundary. SQLite JDBC also contains native libraries for multiple platforms, so the Linux x86_64 image includes only the matching JNI library.
 
-That is why the CI pipeline exercises the executable itself: it checks health, creates a link, runs concurrent redirects, and sends `SIGTERM` to verify a clean exit. Container testing found two gaps beyond native compilation: the image lacked `libz.so.1`, and the standalone healthcheck needed explicit HTTP URL-handler metadata. Both fixes are in place; CI is verifying the corrected image.
+That is why the CI pipeline exercises the executable itself: it checks health, creates a link, runs concurrent redirects, and sends `SIGTERM` to verify a clean exit. Container testing found two gaps beyond native compilation: the image lacked `libz.so.1`, and the standalone healthcheck relied on a URL handler unavailable in the native image. The image now includes zlib, and the healthcheck uses a direct loopback socket; CI is verifying the corrected image.
 
 ## First measurements
 

@@ -23,11 +23,17 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew check test nativeCompile
+      - run: ./gradlew check test nativeCompile installDist
       - uses: taiki-e/install-action@v2
         with:
           tool: oha
-      - run: bash scripts/benchmark.sh
+      - name: Benchmark native and JVM distributions
+        run: |
+          BENCHMARK_RESULTS=build/benchmark-native-results.md bash scripts/benchmark.sh
+          BENCHMARK_RESULTS=build/benchmark-jvm-results.md \
+            bash scripts/benchmark.sh build/install/kurl/bin/kurl jvm
+          cat build/benchmark-native-results.md build/benchmark-jvm-results.md \
+            > build/benchmark-results.md
       - name: Build container and check image size
         run: |
           docker build --tag kurl:ci .
@@ -69,5 +75,5 @@ jobs:
           name: native-benchmark
           path: |
             build/benchmark-results.md
-            build/benchmark-server.log
+            build/benchmark-server-*.log
             build/oha-*.json

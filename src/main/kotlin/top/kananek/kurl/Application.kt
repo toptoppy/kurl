@@ -26,13 +26,20 @@ import kotlin.system.exitProcess
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "healthcheck") {
         val port = (System.getenv("PORT") ?: "8080").toInt()
-        val connection = java.net.URI("http://127.0.0.1:$port/health").toURL().openConnection()
-            as java.net.HttpURLConnection
-        connection.connectTimeout = 1_000
-        connection.readTimeout = 1_000
-        connection.requestMethod = "GET"
-        val healthy = runCatching { connection.responseCode == 200 }.getOrDefault(false)
-        connection.disconnect()
+        val healthy = runCatching {
+            java.net.Socket().use { socket ->
+                socket.connect(java.net.InetSocketAddress("127.0.0.1", port), 1_000)
+                socket.soTimeout = 1_000
+                socket.getOutputStream().write(
+                    "GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n"
+                        .toByteArray(Charsets.US_ASCII),
+                )
+                socket.getInputStream().bufferedReader(Charsets.US_ASCII).use { reader ->
+                    reader.readLine()?.let { it.startsWith("HTTP/1.1 200") || it.startsWith("HTTP/1.0 200") }
+                        ?: false
+                }
+            }
+        }.getOrDefault(false)
         if (!healthy) throw IllegalStateException("KURL health check failed")
         return
     }
