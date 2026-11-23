@@ -48,7 +48,7 @@ graalvmNative {
             buildArgs.addAll(
                 "--no-fallback",
                 "-H:+ReportExceptionStackTraces",
-                "-H:IncludeResources=.*sqlitejdbc.*",
+                "-H:IncludeResources=org/sqlite/native/Linux/x86_64/libsqlitejdbc.so",
                 "--initialize-at-build-time=org.slf4j",
                 "-march=compatibility",
             )
