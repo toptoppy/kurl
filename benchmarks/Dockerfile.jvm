@@ -1,0 +1,13 @@
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+COPY build/install/kurl/ /app/
+RUN mkdir -p /app/data && chown -R 65532:65532 /app
+USER 65532:65532
+
+EXPOSE 8080
+ENV PORT=8080
+ENV DATABASE_PATH=/app/data/kurl.db
+ENV BASE_URL=http://localhost:8080
+
+ENTRYPOINT ["/app/bin/kurl"]

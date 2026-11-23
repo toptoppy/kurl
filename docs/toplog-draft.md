@@ -14,6 +14,35 @@ The service does not fetch submitted destinations. It validates schemes and host
 
 The deployment image uses a distroless base and runs as a non-root UID. SQLite data lives in a mounted `/app/data` directory.
 
+## Create and deploy a link
+
+The create endpoint accepts JSON and returns the generated short URL:
+
+```sh
+curl -sS http://localhost:8080/api/shorten \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com/a/long/path"}'
+```
+
+For a small Compose deployment, keep the database on a mounted volume and inject the optional API key from the host environment:
+
+```yaml
+services:
+  kurl:
+    image: ghcr.io/toptoppy/kurl:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      BASE_URL: https://s.example.com
+      API_KEY: ${KURL_API_KEY}
+      DATABASE_PATH: /app/data/kurl.db
+    volumes:
+      - ./data:/app/data
+```
+
+The repository's [deployment template](../deployment/docker-compose.yml) also joins the existing Caddy Docker network and includes the image healthcheck.
+
 ## Native Image required a real runtime test
 
 The first lesson was that a successful native compilation is not evidence that the executable works.
@@ -45,6 +74,6 @@ OHA reported a 100% success rate at both concurrency levels. At 100 connections,
 
 Kotlin can produce a standalone native Ktor service with a compact distroless image, SQLite storage, and a tested shutdown path. It also brings real costs: native metadata and JNI resources need deliberate handling, and the first measured startup and memory figures miss the ambitious goals.
 
-The useful result is not “native is always smaller.” It is that a small service can be built and tested this way, while its actual resource profile remains visible and reproducible. The next step is to compare the full percentile results on the same runner and then measure the deployed VPS separately.
+The useful result is not “native is always smaller.” It is that a small service can be built and tested this way, while its actual resource profile remains visible and reproducible. CI now benchmarks native and Temurin 21 builds on the same runner; the next step is to record that comparison and measure the deployed VPS separately.
 
 **Repository:** https://github.com/toptoppy/kurl

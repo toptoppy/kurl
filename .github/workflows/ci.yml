@@ -37,11 +37,15 @@ jobs:
       - name: Build container and check image size
         run: |
           docker build --tag kurl:ci .
+          docker build --file benchmarks/Dockerfile.jvm --tag kurl:jvm-ci .
           size=$(docker image inspect kurl:ci --format '{{.Size}}')
+          jvm_size=$(docker image inspect kurl:jvm-ci --format '{{.Size}}')
           user=$(docker image inspect kurl:ci --format '{{.Config.User}}')
           echo "Container image size: ${size} bytes"
+          echo "Temurin 21 JRE image size: ${jvm_size} bytes"
           echo "Container user: ${user}"
           echo "- Distroless image virtual size: ${size} bytes" >> build/benchmark-results.md
+          echo "- Temurin 21 JRE image virtual size: ${jvm_size} bytes" >> build/benchmark-results.md
           test "$size" -lt 60000000
           test "$user" = "65532" -o "$user" = "65532:65532" -o "$user" = "nonroot:nonroot"
       - name: Smoke test the container

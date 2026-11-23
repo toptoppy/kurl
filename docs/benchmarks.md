@@ -31,6 +31,8 @@ BENCHMARK_RESULTS=build/benchmark-jvm-results.md \
 ls -lh build/native/nativeCompile/kurl
 time ./build/native/nativeCompile/kurl
 docker image inspect ghcr.io/toptoppy/kurl:latest --format '{{.Size}}'
+docker build --file benchmarks/Dockerfile.jvm --tag kurl:jvm-ci .
+docker image inspect kurl:jvm-ci --format '{{.Size}}'
 docker stats --no-stream kurl
 ```
 

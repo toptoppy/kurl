@@ -6,10 +6,12 @@ if [[ "$runtime" == "jvm" ]]; then
   binary="${1:-build/install/kurl/bin/kurl}"
   artifact_bytes="$(du -sb build/install/kurl/lib | cut -f1)"
   runtime_version="$(java -version 2>&1 | head -n1)"
+  artifact_description="JVM application libraries only (not including the JRE): $artifact_bytes bytes"
   oha_suffix="-jvm"
 else
   binary="${1:-build/native/nativeCompile/kurl}"
   artifact_bytes="$(stat -c%s "$binary")"
+  artifact_description="native executable $binary: $artifact_bytes bytes"
   native_image="${GRAALVM_HOME:-}/bin/native-image"
   if [[ ! -x "$native_image" ]]; then
     native_image="$(command -v native-image || true)"
@@ -110,7 +112,7 @@ fi
   echo "- OS/kernel: $(uname -a)"
   echo "- CPU: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | xargs)"
   echo "- Runtime: $runtime_version"
-  echo "- Artifact: $binary ($artifact_bytes bytes)"
+  echo "- Runtime artifact: $artifact_description"
   echo "- TCP listener readiness: ${startup_ms} ms (process start to first detected listening socket; includes scheduler and polling resolution)"
   echo "- Time to first health response: ${first_response_ms} ms from process start"
   echo "- First health request latency: ${first_request_ms} ms"
