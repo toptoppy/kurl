@@ -30,9 +30,30 @@ jobs:
         run: |
           docker build --tag kurl:ci .
           size=$(docker image inspect kurl:ci --format '{{.Size}}')
+          user=$(docker image inspect kurl:ci --format '{{.Config.User}}')
           echo "Container image size: ${size} bytes"
+          echo "Container user: ${user}"
           echo "- Distroless image virtual size: ${size} bytes" >> build/benchmark-results.md
           test "$size" -lt 60000000
+          test "$user" = "65532:65532" -o "$user" = "nonroot:nonroot"
+      - name: Smoke test the container
+        run: |
+          mkdir -p build/docker-data
+          chmod 777 build/docker-data
+          docker run -d --name kurl-ci -p 18081:8080 \
+            -v "$PWD/build/docker-data:/app/data" kurl:ci
+          for _ in $(seq 1 30); do
+            health=$(docker inspect kurl-ci --format '{{.State.Health.Status}}')
+            if [ "$health" = healthy ]; then break; fi
+            sleep 1
+          done
+          test "$health" = healthy
+          curl --fail http://127.0.0.1:18081/health
+          docker stop --time 10 kurl-ci
+          exit_code=$(docker inspect kurl-ci --format '{{.State.ExitCode}}')
+          echo "Container exit code after stop: ${exit_code}"
+          test "$exit_code" -eq 0
+          docker rm kurl-ci
       - uses: actions/upload-artifact@v7
         if: always()
         with:

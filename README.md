@@ -8,7 +8,7 @@ A small, self-hosted URL shortener built with Kotlin, Ktor, SQLite, and GraalVM 
 ## Quick start
 
 ```sh
-docker run --rm -p 8080:8080 ghcr.io/toptoppy/kurl:latest
+docker run --rm -p 8080:8080 -v kurl-data:/app/data ghcr.io/toptoppy/kurl:latest
 ```
 
 Open `http://localhost:8080/health` to check the service. To create a short URL:
@@ -21,7 +21,7 @@ curl -i http://localhost:8080/api/shorten \
 
 Set `API_KEY` to require the `X-Api-Key` header for URL creation and statistics. Redirects and health checks remain public.
 
-The image stores SQLite data in `/app/data`. Use a bind mount for persistence, and give the folder to the distroless non-root UID:
+The image stores SQLite data in `/app/data`. The quick start uses a named volume. For a bind mount, give the folder to the distroless non-root UID:
 
 ```sh
 mkdir -p data
