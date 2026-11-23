@@ -6,7 +6,7 @@ No benchmark figures are reported yet. The values below are targets from the pro
 | --- | ---: | --- |
 | Native executable size | Record exact size | Not measured |
 | Container image size | < 60 MB | Not measured |
-| Cold start to listening | < 20 ms | Not measured |
+| Process start to TCP listener | < 20 ms | Not measured |
 | Idle RSS | < 35 MB | Not measured |
 | Redirect P50 / P95 / P99 | Record measured values | Not measured |
 | Throughput | Record requests/second | Not measured |

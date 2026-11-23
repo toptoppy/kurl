@@ -1,10 +1,10 @@
 package top.kananek.kurl
 
-import io.ktor.http.HttpHeaders
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.request.receiveText
@@ -19,6 +19,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.security.SecureRandom
 import java.sql.SQLException
+import sun.misc.Signal
+import sun.misc.SignalHandler
+import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "healthcheck") {
@@ -44,6 +47,8 @@ fun main(args: Array<String>) {
         server.stop(gracePeriodMillis = 1_000, timeoutMillis = 5_000)
         repository.close()
     })
+    Signal.handle(Signal("TERM"), SignalHandler { exitProcess(0) })
+    Signal.handle(Signal("INT"), SignalHandler { exitProcess(0) })
     server.start(wait = true)
 }
 
@@ -95,7 +100,7 @@ fun Application.kurlModule(
 
             val record = if (customSlug != null) {
                 try {
-                withContext(Dispatchers.IO) { repository.save(customSlug, url) }
+                    withContext(Dispatchers.IO) { repository.save(customSlug, url) }
                 } catch (error: SQLException) {
                     if (!error.isUniqueConstraintViolation()) throw error
                     call.respondJson(ErrorResponse("Slug is already taken"), HttpStatusCode.Conflict)

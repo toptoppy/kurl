@@ -58,6 +58,12 @@ class ApplicationTest {
         assertEquals(HttpStatusCode.Created, created.status)
         assertTrue(created.bodyAsText().contains("my-link"))
 
+        val duplicate = client.post("/api/shorten") {
+            header(HttpHeaders.ContentType, "application/json")
+            setBody("""{"url":"https://example.org/another","custom_slug":"my-link"}""")
+        }
+        assertEquals(HttpStatusCode.Conflict, duplicate.status)
+
         val redirect = client.config { followRedirects = false }.get("/my-link")
         assertEquals(HttpStatusCode.Found, redirect.status)
         assertEquals("https://example.org/path", redirect.headers[HttpHeaders.Location])
@@ -111,7 +117,24 @@ class ApplicationTest {
         val repository = testRepo()
         application { kurlModule(repository) }
         assertEquals(HttpStatusCode.NotFound, client.get("/not-found").status)
+        assertEquals(HttpStatusCode.NotFound, client.get("/api/not-found/stats").status)
         assertNotNull(repository)
+        repository.close()
+    }
+
+    @Test
+    fun `missing custom slug generates a six character base62 slug`() = testApplication {
+        val repository = testRepo()
+        application {
+            kurlModule(repository, validator = UrlValidator("http://localhost:8080", publicResolver))
+        }
+        val response = client.post("/api/shorten") {
+            header(HttpHeaders.ContentType, "application/json")
+            setBody("""{"url":"https://example.org/automatic"}""")
+        }
+        assertEquals(HttpStatusCode.Created, response.status)
+        val body = Json.decodeFromString<ShortenResponse>(response.bodyAsText())
+        assertTrue(Regex("^[0-9a-zA-Z]{6}$").matches(body.slug))
         repository.close()
     }
 }

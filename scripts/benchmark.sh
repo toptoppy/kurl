@@ -22,7 +22,7 @@ trap cleanup EXIT
 
 ready_ns=""
 for _ in $(seq 1 200); do
-  if curl --silent --fail "http://127.0.0.1:$port/health" >/dev/null; then
+  if ss -Hltn "sport = :$port" | grep -q LISTEN; then
     ready_ns="$(date +%s%N)"
     break
   fi
@@ -35,6 +35,7 @@ if [[ -z "$ready_ns" ]]; then
 fi
 
 startup_ms="$(( (ready_ns - start_ns) / 1000000 ))"
+curl --silent --show-error --fail "http://127.0.0.1:$port/health" >/dev/null
 binary_bytes="$(stat -c%s "$binary")"
 rss_kb="$(ps -o rss= -p "$pid" | tr -d ' ')"
 ulimit -n 4096 || true
@@ -86,7 +87,7 @@ fi
   echo "- CPU: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | xargs)"
   echo "- GraalVM: $("$native_image" --version | head -n1)"
   echo "- Binary: $binary ($binary_bytes bytes)"
-  echo "- HTTP health readiness: ${startup_ms} ms (process start to first successful curl health request; includes client/process scheduling)"
+  echo "- TCP listener readiness: ${startup_ms} ms (process start to first detected listening socket; includes scheduler and polling resolution)"
   echo "- Idle RSS: ${rss_kb} KiB"
   echo "- SIGTERM exit status: $shutdown_status"
   echo
