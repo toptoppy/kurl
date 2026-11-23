@@ -1,5 +1,6 @@
 FROM gcr.io/distroless/cc-debian12:nonroot
 WORKDIR /app
+COPY --chown=65532:65532 docker/data /app/data
 COPY --chown=65532:65532 build/native/nativeCompile/kurl /app/kurl
 EXPOSE 8080
 ENV PORT=8080
