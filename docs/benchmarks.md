@@ -36,4 +36,4 @@ docker stats --no-stream kurl
 
 Do not compare results from different platforms as if they were equivalent. Record the exact command, build mode, and environment with every result.
 The CI benchmark also sends `SIGTERM` and requires the native process to exit with status `0`.
-The script writes machine-readable `oha` results to `build/oha-100.json` and `build/oha-1000.json` for native, and `build/oha-100-jvm.json` and `build/oha-1000-jvm.json` for JVM, including success rate, throughput, and P50/P95/P99 latency.
+The script records TCP listener readiness, time from process start to its first successful `/health` response, and that first request's latency. It writes machine-readable `oha` results to `build/oha-100.json` and `build/oha-1000.json` for native, and `build/oha-100-jvm.json` and `build/oha-1000-jvm.json` for JVM, including success rate, throughput, and P50/P95/P99 latency.

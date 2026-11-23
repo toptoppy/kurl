@@ -55,7 +55,11 @@ if [[ -z "$ready_ns" ]]; then
 fi
 
 startup_ms="$(( (ready_ns - start_ns) / 1000000 ))"
-curl --silent --show-error --fail "http://127.0.0.1:$port/health" >/dev/null
+first_request_seconds="$(curl --silent --show-error --fail \
+  --output /dev/null --write-out '%{time_total}' "http://127.0.0.1:$port/health")"
+first_response_ns="$(date +%s%N)"
+first_response_ms="$(( (first_response_ns - start_ns) / 1000000 ))"
+first_request_ms="$(awk -v seconds="$first_request_seconds" 'BEGIN { printf "%.3f", seconds * 1000 }')"
 rss_kb="$(ps -o rss= -p "$pid" | tr -d ' ')"
 ulimit -n 4096 || true
 
@@ -108,6 +112,8 @@ fi
   echo "- Runtime: $runtime_version"
   echo "- Artifact: $binary ($artifact_bytes bytes)"
   echo "- TCP listener readiness: ${startup_ms} ms (process start to first detected listening socket; includes scheduler and polling resolution)"
+  echo "- Time to first health response: ${first_response_ms} ms from process start"
+  echo "- First health request latency: ${first_request_ms} ms"
   echo "- Idle RSS: ${rss_kb} KiB"
   echo "- SIGTERM exit status: $shutdown_status"
   echo
