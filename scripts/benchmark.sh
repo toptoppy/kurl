@@ -62,8 +62,17 @@ rm -f "$peak_rss_file"
   done
 ) &
 monitor_pid=$!
-wrk_100="$(wrk --latency -t4 -c100 -d15s "http://127.0.0.1:$port/$slug")"
-wrk_1000="$(wrk --latency -t4 -c1000 -d15s "http://127.0.0.1:$port/$slug")"
+
+run_load_test() {
+  local connections="$1"
+  local output="build/oha-${connections}.json"
+  oha --no-tui --output-format json -o "$output" \
+    -z 15s -c "$connections" "http://127.0.0.1:$port/$slug"
+  jq -e '.metrics.success_rate == 1' "$output" >/dev/null
+}
+
+run_load_test 100
+run_load_test 1000
 kill "$monitor_pid" 2>/dev/null || true
 wait "$monitor_pid" 2>/dev/null || true
 peak_rss_kb="$(sort -nr "$peak_rss_file" | head -n1)"
@@ -92,18 +101,15 @@ fi
   echo "- SIGTERM exit status: $shutdown_status"
   echo
   echo "- Peak RSS during load: ${peak_rss_kb} KiB"
-  echo
-  echo "## Redirect load test: 100 concurrent clients"
-  echo
-  echo '```text'
-  echo "$wrk_100"
-  echo '```'
-  echo
-  echo "## Redirect load test: 1,000 concurrent clients"
-  echo
-  echo '```text'
-  echo "$wrk_1000"
-  echo '```'
+  for connections in 100 1000; do
+    output="build/oha-${connections}.json"
+    echo
+    echo "## Redirect load test: ${connections} concurrent clients"
+    echo
+    echo "- Success rate: $(jq -r '.metrics.success_rate' "$output")"
+    echo "- Throughput: $(jq -r '.metrics.requests_per_sec' "$output") requests/second"
+    echo "- Latency P50 / P95 / P99: $(jq -r '.metrics.latency_ms.p50' "$output") / $(jq -r '.metrics.latency_ms.p95' "$output") / $(jq -r '.metrics.latency_ms.p99' "$output") ms"
+  done
 } >"$results"
 
 cat "$results"

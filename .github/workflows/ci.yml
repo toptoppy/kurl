@@ -24,7 +24,9 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew check test nativeCompile
-      - run: sudo apt-get update && sudo apt-get install -y wrk
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: oha
       - run: bash scripts/benchmark.sh
       - name: Build container and check image size
         run: |
@@ -35,7 +37,7 @@ jobs:
           echo "Container user: ${user}"
           echo "- Distroless image virtual size: ${size} bytes" >> build/benchmark-results.md
           test "$size" -lt 60000000
-          test "$user" = "65532:65532" -o "$user" = "nonroot:nonroot"
+          test "$user" = "65532" -o "$user" = "65532:65532" -o "$user" = "nonroot:nonroot"
       - name: Smoke test the container
         run: |
           mkdir -p build/docker-data
@@ -61,3 +63,4 @@ jobs:
           path: |
             build/benchmark-results.md
             build/benchmark-server.log
+            build/oha-*.json
