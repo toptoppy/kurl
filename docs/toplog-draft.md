@@ -58,7 +58,7 @@ That is why the CI pipeline exercises the executable itself: it checks health, c
 The latest complete benchmark ran on a GitHub-hosted x86_64 Linux VM with an Intel Xeon 6975P-C CPU, GraalVM Native Image 25.0.4, and Temurin 21.0.13. Both runtimes were measured on the same runner. This is a CI measurement, not a production VPS result.
 
 | Metric | Native | Temurin 21 JVM | Project target |
-| --- | ---: | ---: |
+| --- | ---: | ---: | ---: |
 | Runtime artifact | Executable: 54,790,400 bytes | Distribution libraries: 44,251,781 bytes (JRE excluded) | Record |
 | Container image virtual size | 31,739,703 bytes | 206,180,273 bytes | Native: < 60 MB |
 | Process start to TCP listener | 90 ms | 628 ms | Native: < 20 ms |
