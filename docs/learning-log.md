@@ -35,3 +35,9 @@ Use this entry for each completed milestone:
 - **Engineering Hurdle / Gotcha:** Ktor's Netty native metadata needs GraalVM 25 shared-arena support, while the app and Gradle still target Java 21. SQLite JDBC also ships native libraries for multiple operating systems and CPU architectures.
 - **Resolution & Code Snippet:** CI runs Gradle on Temurin 21 and uses GraalVM 25 for `native-image`. The binary includes only `org/sqlite/native/Linux/x86_64/libsqlitejdbc.so`; JSON request and response bodies use explicit generated serializers.
 - **TopLog Takeaway:** A native executable can compile successfully and still fail at runtime due to serializer discovery or missing JNI resources. Run endpoint smoke tests against the built executable and the final container.
+
+## 2026-11-23 - First native benchmark and container validation
+- **Goal:** Measure the Linux native executable under load and verify the final distroless image.
+- **Engineering Hurdle / Gotcha:** The host executable passed its health, create, redirect, load, and SIGTERM checks, but the container's Docker healthcheck did not become healthy. A separate image metadata assertion also had to account for Docker reporting its non-root user as UID `65532`.
+- **Resolution & Code Snippet:** CI now records OHA JSON output with exact P50/P95/P99 percentiles and checks the user as UID `65532`. Added container logs, health state, in-container probe, and external curl diagnostics to the failing healthcheck path.
+- **TopLog Takeaway:** The first CI measurements showed a 31.55 MB image, 120 ms listener readiness, 60,732 KiB idle RSS, and 100% request success. The image-size target passed; the <20 ms startup and <35 MB idle-memory targets did not. These are measurements from a hosted CI runner, not a production VPS.

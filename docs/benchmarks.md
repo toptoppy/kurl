@@ -1,15 +1,21 @@
 # Benchmarks
 
-No benchmark figures are reported yet. The values below are targets from the project brief, not measurements.
+Measurements below are from one GitHub-hosted Linux x86_64 CI run. They are reproducible examples, not production VPS results. Native startup and idle-memory targets were not met.
 
 | Metric | Target | Measured |
-| --- | ---: | --- |
-| Native executable size | Record exact size | Not measured |
-| Container image size | < 60 MB | Not measured |
-| Process start to TCP listener | < 20 ms | Not measured |
-| Idle RSS | < 35 MB | Not measured |
-| Redirect P50 / P95 / P99 | Record measured values | Not measured |
-| Throughput | Record requests/second | Not measured |
+| --- | ---: | ---: |
+| Native executable size | Record exact size | 54,593,792 bytes |
+| Distroless image virtual size | < 60 MB | 31,550,433 bytes |
+| Process start to TCP listener | < 20 ms | 120 ms |
+| Idle RSS | < 35 MB | 60,732 KiB |
+| Peak RSS under load | Record measured value | 134,780 KiB |
+| SIGTERM exit status | 0 | 0 |
+| Redirect, 100 connections: P50 / P95 / P99 | Record measured values | 181.232 / 307.285 / 477.191 ms |
+| Redirect, 100 connections: throughput | Record measured value | 608.209 requests/second |
+| Redirect, 1,000 connections: P50 / P95 / P99 | Record measured values | 1,332.312 / 1,681.686 / 1,762.661 ms |
+| Redirect, 1,000 connections: throughput | Record measured value | 785.455 requests/second |
+
+The benchmark ran on 2026-11-23 with GraalVM Native Image 25.0.4, an AMD EPYC 9V74 80-Core Processor, and Linux kernel `7.0.0-1020-azure` on x86_64. OHA reported a 100% success rate at both concurrency levels. Container healthcheck validation is still in progress; the image-size measurement is valid, but do not treat this as a passing end-to-end container test yet.
 
 ## Reproduction
 

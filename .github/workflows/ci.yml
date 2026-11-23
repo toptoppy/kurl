@@ -49,7 +49,14 @@ jobs:
             if [ "$health" = healthy ]; then break; fi
             sleep 1
           done
-          test "$health" = healthy
+          if [ "$health" != healthy ]; then
+            echo "Container health status: ${health}"
+            docker inspect kurl-ci
+            docker logs kurl-ci
+            docker exec kurl-ci /app/kurl healthcheck || true
+            curl --verbose --max-time 5 http://127.0.0.1:18081/health || true
+            exit 1
+          fi
           curl --fail http://127.0.0.1:18081/health
           docker stop --time 10 kurl-ci
           exit_code=$(docker inspect kurl-ci --format '{{.State.ExitCode}}')
