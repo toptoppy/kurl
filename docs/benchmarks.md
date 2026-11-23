@@ -1,21 +1,34 @@
 # Benchmarks
 
-Measurements below are from one GitHub-hosted Linux x86_64 CI run. They are reproducible examples, not production VPS results. Native startup and idle-memory targets were not met. CI benchmarks the GraalVM native executable and a Temurin 21 JVM distribution on the same runner.
+Measurements below are from GitHub-hosted Linux x86_64 CI run `45183883880` (2026-11-23). They are reproducible examples, not production VPS results. Native startup and idle-memory targets were not met. CI benchmarks the GraalVM native executable and a Temurin 21 JVM distribution on the same runner.
 
 | Metric | Target | Measured |
 | --- | ---: | ---: |
-| Native executable size | Record exact size | 54,593,792 bytes |
-| Distroless image virtual size | < 60 MB | 31,550,433 bytes |
-| Process start to TCP listener | < 20 ms | 120 ms |
-| Idle RSS | < 35 MB | 60,732 KiB |
-| Peak RSS under load | Record measured value | 134,780 KiB |
-| SIGTERM exit status | 0 | 0 |
-| Redirect, 100 connections: P50 / P95 / P99 | Record measured values | 181.232 / 307.285 / 477.191 ms |
-| Redirect, 100 connections: throughput | Record measured value | 608.209 requests/second |
-| Redirect, 1,000 connections: P50 / P95 / P99 | Record measured values | 1,332.312 / 1,681.686 / 1,762.661 ms |
-| Redirect, 1,000 connections: throughput | Record measured value | 785.455 requests/second |
+| Native executable size | Record exact size | 54,790,400 bytes |
+| Distroless image virtual size | < 60 MB | 31,739,703 bytes |
+| Temurin 21 JRE image virtual size | Record measured value | 206,180,273 bytes |
+| Native process start to TCP listener | < 20 ms | 90 ms |
+| Native process start to first `/health` response | Record measured value | 100 ms |
+| Native first `/health` request latency | Record measured value | 2.664 ms |
+| Native idle RSS | < 35 MB | 60,828 KiB |
+| Native peak RSS under load | Record measured value | 123,824 KiB |
+| Native SIGTERM exit status | 0 | 0 |
+| Native redirect, 100 connections: P50 / P95 / P99 | Record measured values | 91.900 / 119.219 / 136.046 ms |
+| Native redirect, 100 connections: throughput | Record measured value | 1,334.537 requests/second |
+| Native redirect, 1,000 connections: P50 / P95 / P99 | Record measured values | 665.266 / 857.926 / 922.132 ms |
+| Native redirect, 1,000 connections: throughput | Record measured value | 1,473.057 requests/second |
+| JVM process start to TCP listener | Record measured value | 628 ms |
+| JVM process start to first `/health` response | Record measured value | 830 ms |
+| JVM first `/health` request latency | Record measured value | 194.208 ms |
+| JVM idle RSS | Record measured value | 128,740 KiB |
+| JVM peak RSS under load | Record measured value | 320,912 KiB |
+| JVM SIGTERM exit status | 0 | 0 |
+| JVM redirect, 100 connections: P50 / P95 / P99 | Record measured values | 64.431 / 169.258 / 202.777 ms |
+| JVM redirect, 100 connections: throughput | Record measured value | 1,288.154 requests/second |
+| JVM redirect, 1,000 connections: P50 / P95 / P99 | Record measured values | 641.881 / 849.692 / 925.271 ms |
+| JVM redirect, 1,000 connections: throughput | Record measured value | 1,522.440 requests/second |
 
-The benchmark values currently shown are from a native-only run on 2026-11-23 with GraalVM Native Image 25.0.4, an AMD EPYC 9V74 80-Core Processor, and Linux kernel `7.0.0-1020-azure` on x86_64. The native-only run had a 100% OHA success rate at both concurrency levels. CI now also benchmarks a Temurin 21 JVM distribution on the same runner to support a like-for-like runtime comparison; those results must be recorded from the next complete run. Container validation found two runtime requirements: Debian 12's `libz.so.1` and a standalone healthcheck that works in GraalVM Native Image. The healthcheck now uses a loopback socket instead of the unavailable URL handler; the final container check is pending another CI run. The image-size number above predates the zlib addition and must be refreshed from the passing run.
+The run used GraalVM Native Image 25.0.4, Temurin 21.0.13, an Intel Xeon 6975P-C, and Linux kernel `7.0.0-1016-aws` on x86_64. Both runtimes had a 100% OHA success rate at both concurrency levels. The native distroless image includes Debian 12's `libz.so.1`; its direct-socket healthcheck and graceful shutdown passed in CI. Native listener readiness and idle RSS remain above their targets. The measured JRE image is about 6.5 times the native image size on this runner. These are single-run CI results, not a statistically controlled performance comparison or production VPS measurements.
 
 ## Reproduction
 

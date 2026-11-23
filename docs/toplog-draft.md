@@ -2,7 +2,7 @@
 
 *Working draft for TopLog. Do not publish until the updated container passes health/shutdown checks, image size is refreshed, and the article is reviewed in the KURL Notebook.*
 
-Kotlin is a comfortable choice for a small HTTP service, but the usual JVM runtime can feel like a lot to carry for a URL shortener. Could GraalVM Native Image make a Ktor service fast to start and small enough to deploy as a single container?
+For a tiny HTTP utility, developers often reach for Go's single-binary deployment or Python's quick scripting loop. Kotlin offers a mature ecosystem and concise server code, but the usual JVM runtime can feel like a lot to carry for a URL shortener. Could GraalVM Native Image make a Ktor service fast to start and small enough to deploy as a single container?
 
 KURL is a small experiment in answering that question with measurements rather than assumptions.
 
@@ -51,29 +51,35 @@ Ktor's Netty native-image metadata uses `SharedArenaSupport`, which the GraalVM 
 
 The next failure appeared only after the native executable started: Ktor's automatic content-negotiation lookup could not find the JSON model serializers. KURL now calls the generated kotlinx-serialization codecs directly at the HTTP boundary. SQLite JDBC also contains native libraries for multiple platforms, so the Linux x86_64 image includes only the matching JNI library.
 
-That is why the CI pipeline exercises the executable itself: it checks health, creates a link, runs concurrent redirects, and sends `SIGTERM` to verify a clean exit. Container testing found two gaps beyond native compilation: the image lacked `libz.so.1`, and the standalone healthcheck relied on a URL handler unavailable in the native image. The image now includes zlib, and the healthcheck uses a direct loopback socket; CI is verifying the corrected image.
+That is why the CI pipeline exercises the executable itself: it checks health, creates a link, runs concurrent redirects, and sends `SIGTERM` to verify a clean exit. Container testing found two gaps beyond native compilation: the image lacked `libz.so.1`, and the standalone healthcheck relied on a URL handler unavailable in the native image. The image now includes zlib, and the healthcheck uses a direct loopback socket. Both the health check and graceful shutdown passed in CI.
 
 ## First measurements
 
-The benchmark ran on a GitHub-hosted x86_64 Linux VM with an AMD EPYC 9V74 CPU and GraalVM Native Image 25.0.4. This is a CI measurement, not a production VPS result.
+The latest complete benchmark ran on a GitHub-hosted x86_64 Linux VM with an Intel Xeon 6975P-C CPU, GraalVM Native Image 25.0.4, and Temurin 21.0.13. Both runtimes were measured on the same runner. This is a CI measurement, not a production VPS result.
 
-| Metric | First CI measurement | Project target |
+| Metric | Native | Temurin 21 JVM | Project target |
 | --- | ---: | ---: |
-| Native executable | 54,593,792 bytes | Record |
-| Distroless image virtual size | 31,550,433 bytes | < 60 MB |
-| Process start to TCP listener | 120 ms | < 20 ms |
-| Idle RSS | 60,732 KiB | < 35 MB |
-| Peak RSS during load | 134,780 KiB | Record |
-| SIGTERM exit status | 0 | 0 |
+| Runtime artifact | Executable: 54,790,400 bytes | Distribution libraries: 44,251,781 bytes (JRE excluded) | Record |
+| Container image virtual size | 31,739,703 bytes | 206,180,273 bytes | Native: < 60 MB |
+| Process start to TCP listener | 90 ms | 628 ms | Native: < 20 ms |
+| Process start to first health response | 100 ms | 830 ms | Record |
+| First health request latency | 2.664 ms | 194.208 ms | Record |
+| Idle RSS | 60,828 KiB | 128,740 KiB | Native: < 35 MB |
+| Peak RSS during load | 123,824 KiB | 320,912 KiB | Record |
+| SIGTERM exit status | 0 | 0 | 0 |
+| 100-connection redirect throughput | 1,334.537 req/s | 1,288.154 req/s | Record |
+| 100-connection redirect P50/P95/P99 | 91.900/119.219/136.046 ms | 64.431/169.258/202.777 ms | Record |
+| 1,000-connection redirect throughput | 1,473.057 req/s | 1,522.440 req/s | Record |
+| 1,000-connection redirect P50/P95/P99 | 665.266/857.926/922.132 ms | 641.881/849.692/925.271 ms | Record |
 
-The image fit the size target, and the process shut down successfully. The measured listener time and idle memory did **not** meet the original targets. These numbers should not be presented as proof that KURL is a sub-20-ms or sub-35-MB service.
+The native image fit the size target, and both processes shut down successfully. Both runtimes had 100% successful requests at both tested concurrency levels. In this run, the Temurin JRE container was about 6.5 times the native image size. Native listener readiness and idle memory did **not** meet the original targets. These numbers should not be presented as proof that KURL is a sub-20-ms or sub-35-MB service.
 
-OHA reported a 100% success rate at both concurrency levels. At 100 connections, throughput was 608.209 requests/second with P50/P95/P99 latency of 181.232/307.285/477.191 ms. At 1,000 connections, throughput was 785.455 requests/second with P50/P95/P99 latency of 1,332.312/1,681.686/1,762.661 ms.
+The results are a useful reminder that one benchmark run is not a universal ranking: native had higher throughput at 100 connections, while the JVM result was higher at 1,000; latency percentiles varied by load level. The purpose is to expose the full measured profile, not to claim that either runtime wins every workload.
 
 ## What the experiment has shown so far
 
 Kotlin can produce a standalone native Ktor service with a compact distroless image, SQLite storage, and a tested shutdown path. It also brings real costs: native metadata and JNI resources need deliberate handling, and the first measured startup and memory figures miss the ambitious goals.
 
-The useful result is not “native is always smaller.” It is that a small service can be built and tested this way, while its actual resource profile remains visible and reproducible. CI now benchmarks native and Temurin 21 builds on the same runner; the next step is to record that comparison and measure the deployed VPS separately.
+The useful result is not “native is always smaller.” It is that a small service can be built and tested this way, while its actual resource profile remains visible and reproducible. The same-runner comparison shows a smaller container and lower startup time and RSS for native in this run, but the original native targets remain unmet. The next step is to measure the deployed VPS separately.
 
 **Repository:** https://github.com/toptoppy/kurl
