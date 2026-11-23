@@ -50,6 +50,11 @@ class UrlRepositoryTest {
     }
 
     @Test
+    fun `database uses write ahead logging`() {
+        repository().use { assertEquals("wal", it.journalMode()) }
+    }
+
+    @Test
     fun `concurrent inserts and click increments complete without lost updates`() = runBlocking {
         repository().use { repo ->
             repo.save("shared", "https://example.org")

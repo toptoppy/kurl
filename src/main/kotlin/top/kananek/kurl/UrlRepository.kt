@@ -94,5 +94,14 @@ class UrlRepository(databasePath: String) : AutoCloseable {
         }
     }
 
+    internal fun journalMode(): String = connection().use { connection ->
+        connection.createStatement().use { statement ->
+            statement.executeQuery("PRAGMA journal_mode").use { result ->
+                check(result.next())
+                result.getString(1)
+            }
+        }
+    }
+
     override fun close() = Unit
 }
