@@ -1,6 +1,6 @@
 # Can Kotlin make a tiny URL shortener?
 
-*Working draft for TopLog. Do not publish until the container healthcheck is resolved and the article is reviewed in the KURL Notebook.*
+*Working draft for TopLog. Do not publish until the updated container passes health/shutdown checks and the article is reviewed in the KURL Notebook.*
 
 Kotlin is a comfortable choice for a small HTTP service, but the usual JVM runtime can feel like a lot to carry for a URL shortener. Could GraalVM Native Image make a Ktor service fast to start and small enough to deploy as a single container?
 
@@ -22,7 +22,7 @@ Ktor's Netty native-image metadata uses `SharedArenaSupport`, which the GraalVM 
 
 The next failure appeared only after the native executable started: Ktor's automatic content-negotiation lookup could not find the JSON model serializers. KURL now calls the generated kotlinx-serialization codecs directly at the HTTP boundary. SQLite JDBC also contains native libraries for multiple platforms, so the Linux x86_64 image includes only the matching JNI library.
 
-That is why the CI pipeline exercises the executable itself: it checks health, creates a link, runs concurrent redirects, and sends `SIGTERM` to verify a clean exit. The image builds, but its container healthcheck is still under investigation.
+That is why the CI pipeline exercises the executable itself: it checks health, creates a link, runs concurrent redirects, and sends `SIGTERM` to verify a clean exit. The first container image exited because it lacked the native executable's `libz.so.1` dependency. The Dockerfile now copies that Debian 12 runtime library, and CI is verifying the corrected image.
 
 ## First measurements
 
