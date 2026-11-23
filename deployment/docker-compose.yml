@@ -1,0 +1,24 @@
+services:
+  kurl:
+    image: ghcr.io/toptoppy/kurl:latest
+    container_name: kurl
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATABASE_PATH: /app/data/kurl.db
+      BASE_URL: https://s.kananek.top
+      API_KEY: ${KURL_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - toptoppy-website_application
+    healthcheck:
+      test: ["CMD", "/app/kurl", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 2s
+
+networks:
+  toptoppy-website_application:
+    external: true
