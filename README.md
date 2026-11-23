@@ -44,7 +44,7 @@ See [docs/api.md](docs/api.md) for request and response examples.
 
 ## Build and test
 
-Requires JDK 21. GraalVM Native Image is additionally required for a local native build.
+Requires JDK 21. GraalVM 25 Native Image is additionally required for a local native build; the application bytecode target remains Java 21.
 
 ```sh
 ./gradlew test

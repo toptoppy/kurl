@@ -22,7 +22,7 @@ The process registers a shutdown hook and stops the Ktor server before closing r
 
 ## Native image
 
-GraalVM Native Image may need reachability metadata for libraries that use reflection or JNI. The SQLite JDBC driver extracts a platform-specific native library at runtime, so native compilation and execution must be verified on the intended OS and architecture. JVM tests alone are insufficient evidence.
+GraalVM Native Image may need reachability metadata for libraries that use reflection or JNI. Ktor's current Netty metadata enables shared-arena support, which requires a GraalVM 25 native-image toolchain. The application still compiles to and runs against Java 21; CI keeps Gradle on Temurin 21 while invoking the GraalVM 25 native-image executable. The SQLite JDBC driver extracts a platform-specific native library at runtime, so native compilation and execution must be verified on the intended OS and architecture. JVM tests alone are insufficient evidence.
 
 ## Performance claims
 
