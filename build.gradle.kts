@@ -49,7 +49,7 @@ graalvmNative {
                 "--no-fallback",
                 "-H:IncludeResources=org/sqlite/native/Linux/x86_64/libsqlitejdbc.so",
                 "--enable-native-access=ALL-UNNAMED",
-                "--initialize-at-build-time=org.slf4j",
+                "--initialize-at-build-time=org.slf4j,io.ktor",
                 "-march=compatibility",
             )
         }
