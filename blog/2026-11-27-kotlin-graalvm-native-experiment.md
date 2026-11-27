@@ -20,10 +20,10 @@ self-hosted utility?
 
 | Goal | Target | Result |
 | --- | ---: | --- |
-| Distroless container image | < 60 MB | ✅ 31.7 MB |
+| Distroless container image | < 60 MB | ✅ 26.8 MB |
 | Graceful shutdown (SIGTERM → exit 0) | 0 | ✅ 0 |
-| Process start → TCP listener | < 20 ms | ❌ 40 ms (VPS) / 90 ms (CI) |
-| Idle RSS | < 35 MB | ❌ ~48 MB (Pss) |
+| Process start → TCP listener | < 20 ms | ❌ 52 ms (CI, CIO) / 90 ms (CI, Netty) |
+| Idle RSS | < 35 MB | ❌ ~51 MB (CI, CIO) |
 
 Two of four. The misses are interesting, and I'll come back to them.
 
@@ -112,25 +112,28 @@ noise.
 
 ## The numbers
 
-Measurements come from a GitHub Actions Linux x86_64 runner (run `45183883880`,
-GraalVM 25.0.4, Temurin 21.0.13, Xeon 6975P-C) and from the production Hetzner VPS
-(Debian 12, same binary, measured with `ps`/`smaps` and an uptime-clock readiness
-probe). Exact reproduction commands live in
-[`docs/benchmarks.md`](https://github.com/toptoppy/kurl/blob/main/docs/benchmarks.md).
+Measurements come from a GitHub Actions Linux x86_64 runner (run `45985608734`,
+GraalVM 25.0.4, Temurin 21.0.13, Xeon 6975P-C; the CIO-engine release 0.1.1) and
+from the production Hetzner VPS (Debian 12; the 0.1.0 Netty binary, measured with
+`ps`/`smaps` and an uptime-clock readiness probe). Exact reproduction commands live
+in [`docs/benchmarks.md`](https://github.com/toptoppy/kurl/blob/main/docs/benchmarks.md).
 
 ### Native vs JVM, same runner
 
 | Metric | Native | Temurin 21 JVM |
 | --- | ---: | ---: |
-| Process start → TCP listener | 90 ms | 628 ms |
-| Idle RSS | 60.8 MB | 128.7 MB |
-| Peak RSS under load | 123.8 MB | 320.9 MB |
-| Redirect throughput (1,000 connections) | 1,473 rps | 1,522 rps |
-| Deployable artifact | 31.7 MB image | 206.2 MB image |
+| Process start → TCP listener | 52 ms | 486 ms |
+| Idle RSS | 51.0 MB | 106.5 MB |
+| Peak RSS under load | 112.8 MB | 350.5 MB |
+| Redirect throughput (1,000 connections) | 1,803 rps | 2,462 rps |
+| Deployable artifact | 26.8 MB image | 174.3 MB image |
 
 The native image is **6.5× smaller** and uses **half the idle memory** of the JVM
-distribution, with redirect throughput statistically in the same league. That alone
-would justify it for a fleet of tiny services.
+distribution, with redirect throughput in the same league. Switching Ktor from the
+Netty engine to the pure-coroutine CIO engine did the last heavy lifting: the binary
+dropped from 54.8 to 42.4 MB, listener readiness from 90 to 52 ms, idle RSS from
+60.8 to 51.0 MB — and redirect throughput at 100 connections *rose* from 1,334 to
+1,802 requests/second. Netty was costing memory without buying speed at this scale.
 
 ### On the production VPS
 
@@ -151,10 +154,10 @@ Heap caps did nothing to the RSS, so I inspected `smaps` at idle. The breakdown:
 - libc and misc: ~2 MB
 
 The Java heap is *not* the problem — `Pss_Anon` was 8.5 MB. The binary itself is the
-memory: code plus the image heap of everything reachable. Ktor's Netty engine is the
-largest single contributor, which is why the current experiment swaps it for Ktor's
-CIO engine (pure coroutines, far less native surface). The CI benchmark on that PR
-will decide whether it ships.
+memory: code plus the image heap of everything reachable. Ktor's Netty engine was the
+largest single contributor, which is why release 0.1.1 swaps it for Ktor's CIO engine
+(pure coroutines, far less native surface) — cutting the binary by 12 MB and idle RSS
+by roughly 8 MB in the CI benchmark.
 
 ### Why 20 ms startup didn't happen
 
@@ -166,7 +169,7 @@ different project.
 
 ## Takeaways
 
-1. **Kotlin can ship Go-sized containers** (31.7 MB distroless image) — but "Go-sized
+1. **Kotlin can ship Go-sized containers** (26.8 MB distroless image) — but "Go-sized
    memory" needs dependency discipline, not just AOT compilation. The image heap
    contains everything reachable, so every library you pull in is RAM you sign up for.
 2. **JVM tests prove nothing about native.** Every native failure we hit — serializer
