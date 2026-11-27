@@ -5,8 +5,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
@@ -45,7 +45,7 @@ fun main(args: Array<String>) {
     }
     val repository = UrlRepository(System.getenv("DATABASE_PATH") ?: "./data/kurl.db")
     val server = embeddedServer(
-        Netty,
+        CIO,
         host = "0.0.0.0",
         port = (System.getenv("PORT") ?: "8080").toInt(),
         module = { kurlModule(repository) },
