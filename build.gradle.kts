@@ -16,7 +16,7 @@ val ktorVersion = "3.6.1"
 
 dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-cio:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("org.xerial:sqlite-jdbc:3.54.1.0")
@@ -47,8 +47,8 @@ graalvmNative {
             mainClass.set("top.kananek.kurl.ApplicationKt")
             buildArgs.addAll(
                 "--no-fallback",
-                "-H:+ReportExceptionStackTraces",
                 "-H:IncludeResources=org/sqlite/native/Linux/x86_64/libsqlitejdbc.so",
+                "--enable-native-access=ALL-UNNAMED",
                 "--initialize-at-build-time=org.slf4j",
                 "-march=compatibility",
             )
