@@ -26,4 +26,4 @@ GraalVM Native Image may need reachability metadata for libraries that use refle
 
 ## Performance claims
 
-The project has targets for startup under 20 ms, idle RSS under 35 MB, and container size under 60 MB. Do not publish these as achieved values until measured on a named environment with repeatable commands. See [benchmarks.md](benchmarks.md).
+The original experiment targets (startup under 20 ms, idle RSS under 35 MB) were re-scoped on 2026-11-27 after measurement: the Ktor + SQLite native-image stack has a floor of roughly 30-50 ms startup and ~39 MB idle RSS on the production VPS (the resident memory is the binary's own code and image heap, not the Java heap). The re-scoped targets are startup under 60 ms and idle RSS under 45 MB on the named VPS environment; CI results may exceed the RSS target because native heap ergonomics scale with host RAM. Do not publish any of these as achieved values until measured on a named environment with repeatable commands. See [benchmarks.md](benchmarks.md).

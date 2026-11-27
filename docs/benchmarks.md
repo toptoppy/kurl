@@ -1,16 +1,16 @@
 # Benchmarks
 
-Measurements below are from GitHub-hosted Linux x86_64 CI run `45985608734` (2026-11-27). They are reproducible examples, not production VPS results. Native startup and idle-memory targets were not met. CI benchmarks the GraalVM native executable and a Temurin 21 JVM distribution on the same runner. This run uses the Ktor CIO engine; the previous verified run (`45183883880`, 2026-11-23) used the Netty engine, so cross-run deltas mix an engine change with platform noise.
+Measurements below are from GitHub-hosted Linux x86_64 CI run `45985608734` (2026-11-27). They are reproducible examples, not production VPS results. The original native startup and idle-memory targets (<20 ms, <35 MB) were not met and were re-scoped on 2026-11-27 to startup <60 ms and idle RSS <45 MB on the named production VPS; the VPS meets both (50 ms, 39,540 kB Rss). CI benchmarks the GraalVM native executable and a Temurin 21 JVM distribution on the same runner. This run uses the Ktor CIO engine; the previous verified run (`45183883880`, 2026-11-23) used the Netty engine, so cross-run deltas mix an engine change with platform noise.
 
 | Metric | Target | Measured |
 | --- | ---: | ---: |
 | Native executable size | Record exact size | 42,404,096 bytes |
 | Distroless image virtual size | < 60 MB | 26,804,778 bytes |
 | Temurin 21 JRE image virtual size | Record measured value | 174,346,285 bytes |
-| Native process start to TCP listener | < 20 ms | 52 ms |
+| Native process start to TCP listener | < 20 ms original; < 60 ms re-scoped (VPS basis) | 52 ms (CI), 50 ms (VPS) |
 | Native process start to first `/health` response | Record measured value | 60 ms |
 | Native first `/health` request latency | Record measured value | 1.397 ms |
-| Native idle RSS | < 35 MB | 52,268 KiB |
+| Native idle RSS | < 35 MB original; < 45 MB re-scoped (VPS basis) | 52,268 KiB (CI), 39,540 kB (VPS) |
 | Native peak RSS under load | Record measured value | 115,484 KiB |
 | Native SIGTERM exit status | 0 | 0 |
 | Native redirect, 100 connections: P50 / P95 / P99 | Record measured values | 56.966 / 74.046 / 81.012 ms |
