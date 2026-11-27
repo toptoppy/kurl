@@ -51,6 +51,7 @@ graalvmNative {
                 "--enable-native-access=ALL-UNNAMED",
                 "--initialize-at-build-time=org.slf4j",
                 "-march=compatibility",
+                "-H:NativeLinkerOption=-no-pie",
             )
         }
     }
